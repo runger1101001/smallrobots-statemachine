@@ -18,7 +18,7 @@
 namespace SmallRobots::StateMachine {
 
     class State;
-
+    class Stream;
 
     class Transition {
     public:
@@ -67,6 +67,11 @@ namespace SmallRobots::StateMachine {
         void emit(uint8_t event, void* data = nullptr);
         void run();
         bool in_state(uint8_t state);
+
+        uint16_t downsample = 1; // 1 means no downsample, run each time run() is called
+
+        static Stream* debug;
+        static bool debug_verbose;
     protected:
         bool pop(Event& event);
         bool push(uint8_t event, void* data = nullptr);
@@ -86,6 +91,8 @@ namespace SmallRobots::StateMachine {
         Event event_queue[SMALLROBOTS_STATEMACHINE_MAX_EVENTS];
         uint32_t pushed = 0;
         uint32_t popped = 0;
+
+        uint16_t downsample_counter = 0;
     };
 
 

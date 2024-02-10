@@ -5,6 +5,23 @@
 
 namespace SmallRobots::StateMachine {
 
+    Stream* StateMachine::debug = nullptr;
+    bool StateMachine::debug_verbose = false;
+
+
+    void debug(char* message) {
+        if (StateMachine::debug && debug_verbose)
+            StateMachine::debug.println(message);
+    };
+    void info(char* message) {
+        if (StateMachine::debug)
+            StateMachine::debug.println(message);
+    };
+    void error(char* message) {
+        if (StateMachine::debug)
+            StateMachine::debug.println(message);
+    };
+
 
 
     State::State(uint8_t id, void (*run)(State& state)) {
@@ -113,6 +130,9 @@ namespace SmallRobots::StateMachine {
 
 
     void StateMachine::run() {
+        if (downsample==0 || downsample_counter++ < downsample)
+            return;
+        downsample_counter = 0;
         Event event;
         uint8_t N = num_active;
         uint8_t E = events_available();
@@ -206,9 +226,7 @@ namespace SmallRobots::StateMachine {
 
     uint8_t StateMachine::events_available() {
         uint32_t result;
-        noInterrupts();
         result = pushed - popped;
-        interrupts();
         return result;
     };
 

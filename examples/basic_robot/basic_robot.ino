@@ -4,6 +4,22 @@
 
 using namespace SmallRobots::StateMachine;
 
+
+
+// simulated motor
+class Motor {
+public:
+    void set_target(float left, float right) {
+        Serial.print("Motor: left=");
+        Serial.print(left);
+        Serial.print(", right=");
+        Serial.println(right);
+    }
+};
+
+Motor motor;
+
+
 enum robot_State : uint8_t {
     FORWARD = 1,
     TURN_LEFT = 2,
@@ -16,9 +32,6 @@ enum robot_Events : uint8_t {
     SENSOR_RIGHT = 2,
     SENSOR_FRONT = 3
 };
-
-
-
 
 
 

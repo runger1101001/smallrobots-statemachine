@@ -1,99 +1,72 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <functional>
+#include <vector>
+#include <Arduino.h>
 
-#if !defined(SMALLROBOTS_STATEMACHINE_MAX_EVENTS)
-#define SMALLROBOTS_STATEMACHINE_MAX_EVENTS 10    
-#endif
+namespace SmallRobots {
 
-#if !defined(SMALLROBOTS_STATEMACHINE_MAX_PARALLEL_STATES)
-#define SMALLROBOTS_STATEMACHINE_MAX_PARALLEL_STATES 10
-#endif
+#define STATE(name) State name{#name}
+#define TRANSITION(name, event, from, to) Transition name{#name, #event, from, to}
 
-#define SMALLROBOTS_STATEMACHINE_NO_STATE 0xFF
-#define SMALLROBOTS_STATEMACHINE_NO_EVENT 0xFF
-#define SMALLROBOTS_STATEMACHINE_TIMEOUT_EVENT 0xFE
-
-namespace SmallRobots::StateMachine {
-
-    class State;
-    class Stream;
-
-    class Transition {
-    public:
-        Transition(uint8_t event, uint8_t target_state, void (*action)(State& state, Event event) = nullptr, bool (*guard)(State& state, Event event) = nullptr, uint8_t num_emits = 0, uint8_t* emits = nullptr);
-        Transition& emits(uint8_t num_emits, uint8_t* emits);
-        Transition& timeout(uint32_t timeout_ms);
-        Transition& guard(bool (*guard)(State& state, Event event));
-        Transition& action(void (*action)(State& state, Event event));
-        uint8_t event;
-        uint8_t target_state;
-        bool (*_guard)(State& state, Event event) = nullptr;
-        void (*_action)(State& state, Event event) = nullptr;
-        uint8_t* _emits;
-        uint8_t num_emits;
-        uint32_t timeout_ms;
-    };
 
 
     class State {
+    friend class StateMachine;
     public:
-        State(uint8_t id, void (*run)(State& state) = nullptr);
-        State(uint8_t id, uint8_t num_transitions, Transition* transitions, void (*run)(State& state) = nullptr);
-        State& transitions(uint8_t num_transitions, Transition* transitions);
-        State& run(void (*run)(State& state));
-        uint8_t id;
-        void (*_run)(State& state) = nullptr;
-        Transition* _transitions;
-        uint8_t num_transitions;
+        State(String name);
+        ~State();
+
+        bool operator==(const State& other) const {
+            if (this == &ANY_STATE || &other == &ANY_STATE) return true;
+            return this == &other;
+        }
+
+        static State ANY_STATE;
+        
+        String name;
+        uint32_t timeout;
+        std::function<void()> enter = nullptr;
+        std::function<void()> exit = nullptr;
+    protected:
+        uint32_t timestamp;
     };
 
 
 
-    class Event {
+    class Transition {
     public:
-        uint8_t id;
-        void* data;
+        Transition(String name, String event, State& from, State& to);
+        ~Transition();
+        String name;
+        String event;
+        State& from;
+        State& to;
+        std::function<void()> on = nullptr;
+        std::function<bool()> guard = nullptr;
     };
-
 
 
     class StateMachine {
     public:
-        StateMachine(uint8_t initial_state, uint8_t num_states, State* states);
-        void _global_transitions(uint8_t num_global_transitions, Transition* global_transitions);
+        StateMachine();
+        ~StateMachine();
+        
+        void trigger(String event);
+        void tick();
+        void transition(Transition& t);
 
-        void emit(uint8_t event, void* data = nullptr);
-        void run();
-        bool in_state(uint8_t state);
+        void start();
 
-        uint16_t downsample = 1; // 1 means no downsample, run each time run() is called
+        std::vector<Transition*> all_transitions;
+        std::vector<State*> all_states;
+        State* initial_state;
 
-        static Stream* debug;
-        static bool debug_verbose;
+        bool debug = false;
+
     protected:
-        bool pop(Event& event);
-        bool push(uint8_t event, void* data = nullptr);
-        uint8_t events_available();
-
-        State* find_state(uint8_t id);
-
-        uint8_t num_states;
-        State* states;
-
-        uint8_t num_global_transitions;
-        Transition* _global_transitions;
-
-        uint8_t num_active;
-        State* active_states[SMALLROBOTS_STATEMACHINE_MAX_PARALLEL_STATES];
-
-        Event event_queue[SMALLROBOTS_STATEMACHINE_MAX_EVENTS];
-        uint32_t pushed = 0;
-        uint32_t popped = 0;
-
-        uint16_t downsample_counter = 0;
+        State* current_state = nullptr;
     };
 
-
-}; // namespace SmallRobots::StateMachine
+}; // namespace SmallRobots

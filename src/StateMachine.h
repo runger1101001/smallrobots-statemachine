@@ -64,7 +64,6 @@ namespace SmallRobots {
         State* initial_state;
 
         bool debug = false;
-
     protected:
         State* current_state = nullptr;
     };

@@ -2,8 +2,13 @@
 #include "./StateMachine.h"
 #include "Arduino.h"
 #include <cstdarg>
+#include "./SmallRobotDebug.h"
+
 
 namespace SmallRobots {
+
+
+
 
 
     State::State(String name) : name(name) {
@@ -29,15 +34,15 @@ namespace SmallRobots {
 
 
     void StateMachine::start(){
-        if (debug) Serial.println("StateMachine: starting");
+        if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: starting");
         current_state = initial_state;
         if (current_state==nullptr) {
             current_state = all_states[0];
         }
-        if (debug) Serial.println("StateMachine: entering "+current_state->name);
+        if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: entering "+current_state->name);
         current_state->timestamp = millis();
         if (current_state->enter != nullptr) {
-            if (debug) Serial.println("StateMachine: calling enter for "+current_state->name);
+            if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: calling enter for "+current_state->name);
             current_state->enter();
         }
     };
@@ -45,7 +50,7 @@ namespace SmallRobots {
 
 
     void StateMachine::trigger(String event) {
-        if (debug) Serial.println("StateMachine: incoming event "+event);
+        if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: incoming event "+event);
         // TODO disconnect trigger function from trigger execution via a queue
         for (size_t i=0;i<all_transitions.size();i++) {
             Transition* t = all_transitions[i];
@@ -54,7 +59,7 @@ namespace SmallRobots {
                 return;
             }
         }
-        if (debug) Serial.println("StateMachine: no transition for event "+event);
+        if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: no transition for event "+event);
     };
 
 
@@ -62,7 +67,7 @@ namespace SmallRobots {
         if (current_state->timeout > 0) {
             unsigned long now = millis();
             if (now - current_state->timestamp > current_state->timeout) {
-                if (debug) Serial.println("StateMachine: timeout for "+current_state->name);
+                if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: timeout for "+current_state->name);
                 current_state->timestamp = now; // reset timestamp
                 trigger(current_state->name+"_timeout"); // send timeout event only to ourselves
             }
@@ -72,27 +77,27 @@ namespace SmallRobots {
 
     void StateMachine::transition(Transition& t) {
         if (t.guard != nullptr) {
-            if (debug) Serial.println("StateMachine: checking guard for "+t.name);
+            if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: checking guard for "+t.name);
             if (!t.guard()) {
-                if (debug) Serial.println("StateMachine: guard for "+t.name+" false, transition suppressed");
+                if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: guard for "+t.name+" false, transition suppressed");
                 return;
             }
         }
-        if (debug) Serial.println("StateMachine: exiting "+current_state->name);
+        if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: exiting "+current_state->name);
         if (current_state->exit != nullptr) {
-            if (debug) Serial.println("StateMachine: calling exit for "+current_state->name);
+            if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: calling exit for "+current_state->name);
             current_state->exit();
         }
-        if (debug) Serial.println("StateMachine: transition "+t.name);
+        if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: transition "+t.name);
         if (t.on != nullptr) {
-            if (debug) Serial.println("StateMachine: calling on for "+t.name);
+            if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: calling on for "+t.name);
             t.on();
         }
-        if (debug) Serial.println("StateMachine: entering "+t.to.name);
+        if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: entering "+t.to.name);
         current_state = &t.to;
         current_state->timestamp = millis();
         if (current_state->enter != nullptr) {
-            if (debug) Serial.println("StateMachine: calling enter for "+current_state->name);
+            if (debug && smallrobot_debug_print!=nullptr) smallrobot_debug_print->println("StateMachine: calling enter for "+current_state->name);
             current_state->enter();
         }
     };

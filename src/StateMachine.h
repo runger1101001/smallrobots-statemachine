@@ -59,6 +59,10 @@ namespace SmallRobots {
 
         void start();
 
+        bool operator==(const State& state) const {
+            return *current_state == state;
+        }
+
         std::vector<Transition*> all_transitions;
         std::vector<State*> all_states;
         State* initial_state;
